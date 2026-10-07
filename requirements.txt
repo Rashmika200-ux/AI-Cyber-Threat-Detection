@@ -1,6 +1,6 @@
 streamlit
-pandas
-numpy
-scikit-learn
-joblib
-cryptography
+scikit-learn==1.6.1
+numpy==2.0.2
+pandas==2.2.2
+joblib==1.5.3
+cryptography==49.0.0
