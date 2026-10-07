@@ -67,12 +67,10 @@ Upload a CIC-IDS2017 flow CSV and the system classifies each flow as
 @st.cache_resource(show_spinner="Verifying and loading secure AI model...")
 def load_secure_model():
     # ---- Check required files ----
-    required = [
-        PACKAGE_PATH,
-        AES_KEY_PATH,
-        PACKAGE_HASH_PATH,
-    ]
-
+   required = [
+    PACKAGE_PATH,
+    PACKAGE_HASH_PATH,
+]
     missing = [p for p in required if not os.path.exists(p)]
 
     if missing:
