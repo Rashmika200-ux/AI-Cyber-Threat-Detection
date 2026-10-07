@@ -17,19 +17,20 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 # CONFIG
 # ============================================================
 
-PROJECT = os.environ.get(
-    "CYBER_PROJECT_DIR",
-    "/content/drive/MyDrive/AI_Cybersecurity_Project",
+# ============================================================
+# HOSTED APP CONFIG
+# ============================================================
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+PACKAGE_PATH = os.path.join(
+    BASE_DIR,
+    "secure_model_package.json"
 )
 
-MODEL_DIR = os.path.join(PROJECT, "models")
-RESULT_DIR = os.path.join(PROJECT, "results")
-KEY_DIR = os.path.join(PROJECT, "keys")
-
-PACKAGE_PATH = os.path.join(MODEL_DIR, "secure_model_package.json")
-AES_KEY_PATH = os.path.join(KEY_DIR, "aes256_key_demo.bin")
 PACKAGE_HASH_PATH = os.path.join(
-    RESULT_DIR, "secure_package_sha256.txt"
+    BASE_DIR,
+    "secure_package_sha256.txt"
 )
 
 MAX_UPLOAD_ROWS = 100_000
@@ -133,15 +134,26 @@ def load_secure_model():
             "Ed25519 signature verification failed."
         ) from exc
 
-    # ---- AES-256-GCM decryption ----
-    with open(AES_KEY_PATH, "rb") as f:
-        aes_key = f.read()
+ # ---- AES-256-GCM decryption ----
+try:
+    key_b64 = st.secrets["AES_KEY_B64"]
+except Exception as exc:
+    raise RuntimeError(
+        "AES_KEY_B64 is not configured in Streamlit Secrets."
+    ) from exc
 
-    decrypted_bytes = AESGCM(aes_key).decrypt(
-        nonce,
-        ciphertext,
-        aad,
+aes_key = base64.b64decode(key_b64)
+
+if len(aes_key) != 32:
+    raise ValueError(
+        "AES_KEY_B64 must decode to exactly 32 bytes."
     )
+
+decrypted_bytes = AESGCM(aes_key).decrypt(
+    nonce,
+    ciphertext,
+    aad,
+)
 
     payload = joblib.load(
         io.BytesIO(decrypted_bytes)
