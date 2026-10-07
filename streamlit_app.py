@@ -67,10 +67,11 @@ Upload a CIC-IDS2017 flow CSV and the system classifies each flow as
 @st.cache_resource(show_spinner="Verifying and loading secure AI model...")
 def load_secure_model():
     # ---- Check required files ----
-   required = [
-    PACKAGE_PATH,
-    PACKAGE_HASH_PATH,
-]
+    required = [
+        PACKAGE_PATH,
+        PACKAGE_HASH_PATH,
+    ]
+
     missing = [p for p in required if not os.path.exists(p)]
 
     if missing:
@@ -127,31 +128,33 @@ def load_secure_model():
             aad + nonce + ciphertext,
         )
         signature_verified = True
+
     except InvalidSignature as exc:
         raise ValueError(
             "Ed25519 signature verification failed."
         ) from exc
 
- # ---- AES-256-GCM decryption ----
-try:
-    key_b64 = st.secrets["AES_KEY_B64"]
-except Exception as exc:
-    raise RuntimeError(
-        "AES_KEY_B64 is not configured in Streamlit Secrets."
-    ) from exc
+    # ---- AES-256-GCM decryption ----
+    try:
+        key_b64 = st.secrets["AES_KEY_B64"]
 
-aes_key = base64.b64decode(key_b64)
+    except Exception as exc:
+        raise RuntimeError(
+            "AES_KEY_B64 is not configured in Streamlit Secrets."
+        ) from exc
 
-if len(aes_key) != 32:
-    raise ValueError(
-        "AES_KEY_B64 must decode to exactly 32 bytes."
+    aes_key = base64.b64decode(key_b64)
+
+    if len(aes_key) != 32:
+        raise ValueError(
+            "AES_KEY_B64 must decode to exactly 32 bytes."
+        )
+
+    decrypted_bytes = AESGCM(aes_key).decrypt(
+        nonce,
+        ciphertext,
+        aad,
     )
-
-decrypted_bytes = AESGCM(aes_key).decrypt(
-    nonce,
-    ciphertext,
-    aad,
-)
 
     payload = joblib.load(
         io.BytesIO(decrypted_bytes)
@@ -169,7 +172,6 @@ decrypted_bytes = AESGCM(aes_key).decrypt(
         "signature_verified": signature_verified,
         "package_size": len(package_bytes),
     }
-
 
 try:
     secure = load_secure_model()
